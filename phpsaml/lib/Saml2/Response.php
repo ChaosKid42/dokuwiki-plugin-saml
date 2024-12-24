@@ -165,7 +165,7 @@ class OneLogin_Saml2_Response
                 }
 
                 $currentURL = OneLogin_Saml2_Utils::getSelfRoutedURLNoQuery();
-                
+
                 $responseInResponseTo = null;
                 if ($this->document->documentElement->hasAttribute('InResponseTo')) {
                     $responseInResponseTo = $this->document->documentElement->getAttribute('InResponseTo');
@@ -357,7 +357,7 @@ class OneLogin_Saml2_Response
                         OneLogin_Saml2_ValidationError::NO_SIGNED_ASSERTION
                     );
                 }
-                
+
                 if ($security['wantMessagesSigned'] && !$hasSignedResponse) {
                     throw new OneLogin_Saml2_ValidationError(
                         "The Message of the Response is not signed and the SP requires it",
@@ -600,8 +600,8 @@ class OneLogin_Saml2_Response
 
         $nameIdData = array();
 
+        $security = $this->_settings->getSecurityData();
         if (!isset($nameId)) {
-            $security = $this->_settings->getSecurityData();
             if ($security['wantNameId']) {
                 throw new OneLogin_Saml2_ValidationError(
                     "NameID not found in the assertion of the Response",
@@ -609,7 +609,7 @@ class OneLogin_Saml2_Response
                 );
             }
         } else {
-            if ($this->_settings->isStrict() && empty($nameId->nodeValue)) {
+            if ($this->_settings->isStrict() && $security['wantNameId'] && empty($nameId->nodeValue)) {
                 throw new OneLogin_Saml2_ValidationError(
                     "An empty NameID value found",
                     OneLogin_Saml2_ValidationError::EMPTY_NAMEID
@@ -624,7 +624,7 @@ class OneLogin_Saml2_Response
                         $spEntityId = $spData['entityId'];
                         if ($spEntityId != $nameId->getAttribute($attr)) {
                             throw new OneLogin_Saml2_ValidationError(
-                                "The SPNameQualifier value mistmatch the SP entityID value.",
+                                "The SPNameQualifier value mismatch the SP entityID value.",
                                 OneLogin_Saml2_ValidationError::SP_NAME_QUALIFIER_NAME_MISMATCH
                             );
                         }
@@ -779,6 +779,9 @@ class OneLogin_Saml2_Response
 
         $entries = $this->_queryAssertion('/saml:AttributeStatement/saml:Attribute');
 
+        $security = $this->_settings->getSecurityData();
+        $allowRepeatAttributeName = $security['allowRepeatAttributeName'];
+
         /** @var $entry DOMNode */
         foreach ($entries as $entry) {
             $attributeKeyNode = $entry->attributes->getNamedItem($keyName);
@@ -789,11 +792,13 @@ class OneLogin_Saml2_Response
 
             $attributeKeyName = $attributeKeyNode->nodeValue;
 
-            if (in_array($attributeKeyName, array_keys($attributes))) {
-                throw new OneLogin_Saml2_ValidationError(
-                    "Found an Attribute element with duplicated ".$keyName,
-                    OneLogin_Saml2_ValidationError::DUPLICATED_ATTRIBUTE_NAME_FOUND
-                );
+            if (in_array($attributeKeyName, array_keys($attributes), true)) {
+                if (!$allowRepeatAttributeName) {
+                    throw new OneLogin_Saml2_ValidationError(
+                        "Found an Attribute element with duplicated ".$keyName,
+                        OneLogin_Saml2_ValidationError::DUPLICATED_ATTRIBUTE_NAME_FOUND
+                    );
+                }
             }
 
             $attributeValues = array();
@@ -804,7 +809,11 @@ class OneLogin_Saml2_Response
                 }
             }
 
-            $attributes[$attributeKeyName] = $attributeValues;
+            if (in_array($attributeKeyName, array_keys($attributes), true)) {
+                $attributes[$attributeKeyName] = array_merge($attributes[$attributeKeyName], $attributeValues);
+            } else {
+                $attributes[$attributeKeyName] = $attributeValues;
+            }
         }
         return $attributes;
     }
@@ -1120,7 +1129,7 @@ class OneLogin_Saml2_Response
                 $objKeyInfo->loadKey($pem, false, false);
             }
         }
-                
+
         if (empty($objKey->key)) {
             $objKey->loadKey($key);
         }
