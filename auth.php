@@ -4,6 +4,9 @@
  *
  * @author     Andreas Gohr <gohr@cosmocode.de>
  */
+
+use dokuwiki\Utf8\PhpString;
+
 class auth_plugin_adfs extends auth_plugin_authplain
 {
     /** @var OneLogin_Saml2_Auth the SAML authentication library */
@@ -152,7 +155,7 @@ class auth_plugin_adfs extends auth_plugin_authplain
             )
         );
         if ($this->getConf('lowercase')) {
-            return utf8_strtolower($user);
+            return PhpString::strtolower($user);
         } else {
             return $user;
         }
