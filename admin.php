@@ -5,6 +5,9 @@
  *
  * @author     Andreas Gohr <gohr@cosmocode.de>
  */
+
+use dokuwiki\HTTP\DokuHTTPClient;
+
 class admin_plugin_adfs extends DokuWiki_Admin_Plugin
 {
     protected $xml = '';
