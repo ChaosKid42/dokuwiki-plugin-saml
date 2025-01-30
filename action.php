@@ -1,5 +1,7 @@
 <?php
 
+use dokuwiki\JWT;
+
 /**
  * SAML authentication plugin
  *
@@ -19,7 +21,7 @@ class action_plugin_saml extends DokuWiki_Action_Plugin
     /**
      * Send the Federation Metadata about this Service Provider
      * Otherwise, handle Logout for SAML plugin
-     * 
+     *
      * @param Doku_Event $event
      * @param mixed $param
      */
@@ -28,10 +30,24 @@ class action_plugin_saml extends DokuWiki_Action_Plugin
         global $ID;
 		global $auth;
         $act = act_clean($event->data);
-		if($act == "logout" && $this->getConf('use_slo') && 
+		if($act == "logout" && $this->getConf('use_slo') &&
 			(isset($_GET["SAMLResponse"]) || isset($_GET["SAMLRequest"]))) {
 			$auth->logOff();
 		}
+
+        if (str_starts_with($act, 'showtoken_')) {
+            if (auth_isadmin()) {
+                $event->preventDefault();
+                $event->stopPropagation();
+                header('Content-Type: text/plain');
+                $user = substr($act, 10);
+                $token = JWT::fromUser($user);
+                echo $token->getToken();
+                exit();
+            }
+            else return;
+        }
+
         if ($act != 'saml') return;
         $event->preventDefault();
         $event->stopPropagation();
@@ -40,7 +56,7 @@ class action_plugin_saml extends DokuWiki_Action_Plugin
         $hlp = plugin_load('helper', 'saml');
         $saml = $hlp->getSamlLib();
 
- 
+
 
         try {
             header('Content-Type: application/samlmetadata+xml');
