@@ -30,6 +30,11 @@ class action_plugin_saml extends DokuWiki_Action_Plugin
         global $ID;
 		global $auth;
         $act = act_clean($event->data);
+        if($act == "heartbeat") {
+            header('Content-Type: text/plain');
+            echo "OK";
+            exit();
+        }
 		if($act == "logout" && $this->getConf('use_slo') &&
 			(isset($_GET["SAMLResponse"]) || isset($_GET["SAMLRequest"]))) {
 			$auth->logOff();

@@ -61,7 +61,7 @@ class auth_plugin_saml extends auth_plugin_authplain
             return true;
         } else {
             $autoLoginConf = $this->getConf("auto_login");
-            $autoLogin = ($autoLoginConf == "never") ? false : (
+            $autoLogin = (($autoLoginConf == "never") || ($ACT == "heartbeat")) ? false : (
                 ($autoLoginConf == "after login" && get_doku_pref('saml_autologin', 0)) ||
                 ($autoLoginConf == "always"));
         }
